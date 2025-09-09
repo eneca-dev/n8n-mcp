@@ -1,0 +1,216 @@
+{
+  "name": "Тест MCP n8n - Напоминания важных событий",
+  "nodes": [
+    {
+      "id": "telegram-trigger",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [250, 300],
+      "parameters": {
+        "updates": ["message"]
+      },
+      "credentials": {
+        "telegramApi": {
+          "id": "telegram-credentials",
+          "name": "Telegram Bot API"
+        }
+      }
+    },
+    {
+      "id": "ai-agent",
+      "name": "AI Agent - Обработка запросов",
+      "type": "n8n-nodes-langchain.agent",
+      "typeVersion": 1.0,
+      "position": [450, 300],
+      "parameters": {
+        "model": "gpt-4o-mini",
+        "systemMessage": "Ты - помощник для управления напоминаниями важных событий. Ты можешь:\n1. Добавлять новые события в календарь\n2. Обновлять существующие события\n3. Удалять события\n4. Показывать список событий\n5. Напоминать о предстоящих событиях\n\nИспользуй доступные инструменты для работы с календарем. Отвечай на русском языке.",
+        "tools": [
+          {
+            "type": "n8n-nodes-base.googleCalendar",
+            "operation": "create",
+            "description": "Создать новое событие в календаре"
+          },
+          {
+            "type": "n8n-nodes-base.googleCalendar", 
+            "operation": "update",
+            "description": "Обновить существующее событие"
+          },
+          {
+            "type": "n8n-nodes-base.googleCalendar",
+            "operation": "delete", 
+            "description": "Удалить событие"
+          },
+          {
+            "type": "n8n-nodes-base.googleCalendar",
+            "operation": "getAll",
+            "description": "Получить список всех событий"
+          }
+        ]
+      },
+      "credentials": {
+        "openAiApi": {
+          "id": "openai-credentials",
+          "name": "OpenAI API"
+        }
+      }
+    },
+    {
+      "id": "google-calendar",
+      "name": "Google Calendar - Управление событиями",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.0,
+      "position": [650, 300],
+      "parameters": {
+        "operation": "create",
+        "calendarId": "primary",
+        "start": "={{ $json.start }}",
+        "end": "={{ $json.end }}",
+        "summary": "={{ $json.title }}",
+        "description": "={{ $json.description }}"
+      },
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "google-calendar-credentials",
+          "name": "Google Calendar OAuth2"
+        }
+      }
+    },
+    {
+      "id": "memory-store",
+      "name": "Memory Store - Хранение контекста",
+      "type": "n8n-nodes-base.memoryStore",
+      "typeVersion": 1.0,
+      "position": [450, 500],
+      "parameters": {
+        "operation": "set",
+        "key": "user_context_{{ $json.from.id }}",
+        "value": "={{ $json }}"
+      }
+    },
+    {
+      "id": "memory-get",
+      "name": "Memory Get - Получение контекста",
+      "type": "n8n-nodes-base.memoryStore",
+      "typeVersion": 1.0,
+      "position": [250, 500],
+      "parameters": {
+        "operation": "get",
+        "key": "user_context_{{ $json.from.id }}"
+      }
+    },
+    {
+      "id": "telegram-send",
+      "name": "Telegram Send - Ответ пользователю",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [850, 300],
+      "parameters": {
+        "operation": "sendMessage",
+        "chatId": "={{ $json.from.id }}",
+        "text": "={{ $json.response }}"
+      },
+      "credentials": {
+        "telegramApi": {
+          "id": "telegram-credentials",
+          "name": "Telegram Bot API"
+        }
+      }
+    },
+    {
+      "id": "set-data",
+      "name": "Set Data - Подготовка данных",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [250, 100],
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "user_id",
+              "value": "={{ $json.from.id }}"
+            },
+            {
+              "name": "message_text",
+              "value": "={{ $json.text }}"
+            },
+            {
+              "name": "username",
+              "value": "={{ $json.from.username }}"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Set Data - Подготовка данных",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Data - Подготовка данных": {
+      "main": [
+        [
+          {
+            "node": "Memory Get - Получение контекста",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "AI Agent - Обработка запросов",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Memory Get - Получение контекста": {
+      "main": [
+        [
+          {
+            "node": "AI Agent - Обработка запросов",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent - Обработка запросов": {
+      "main": [
+        [
+          {
+            "node": "Google Calendar - Управление событиями",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Calendar - Управление событиями": {
+      "main": [
+        [
+          {
+            "node": "Telegram Send - Ответ пользователю",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveManualExecutions": true,
+    "saveExecutionProgress": true
+  }
+}

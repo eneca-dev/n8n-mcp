@@ -1,0 +1,72 @@
+{
+  "name": "Тест MCP n8n - Напоминания",
+  "nodes": [
+    {
+      "id": "webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [250, 300],
+      "parameters": {
+        "path": "reminder-bot",
+        "httpMethod": "POST"
+      }
+    },
+    {
+      "id": "ai-agent",
+      "name": "AI Agent",
+      "type": "n8n-nodes-langchain.agent",
+      "typeVersion": 1.0,
+      "position": [450, 300],
+      "parameters": {
+        "model": "gpt-4o-mini",
+        "systemMessage": "Ты - помощник для управления напоминаниями. Обрабатывай запросы пользователей на добавление, обновление или удаление событий в календаре. Отвечай на русском языке.",
+        "tools": []
+      }
+    },
+    {
+      "id": "set-response",
+      "name": "Set Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [650, 300],
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "response",
+              "value": "Событие обработано: {{ $json.message }}"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Set Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

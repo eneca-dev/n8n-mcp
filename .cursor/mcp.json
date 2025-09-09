@@ -1,0 +1,16 @@
+{
+    "mcpServers": {
+      "n8n-mcp": {
+        "command": "npx",
+        "args": ["n8n-mcp"],
+        "env": {
+          "MCP_MODE": "stdio",
+          "LOG_LEVEL": "error",
+          "DISABLE_CONSOLE_OUTPUT": "true",
+          "N8N_API_URL": "https://eneca.app.n8n.cloud",
+          "N8N_API_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI5ZmQ0NDU1MC00OWU3LTQzMDAtODBjYy00YTM1Mzc2ZTFiMWMiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwiaWF0IjoxNzU3MzY1Mjc1LCJleHAiOjE3NTk5NTM2MDB9.kBucujrlCq5e4ohnvuhQLEfB9milruk9AvHdih03NMY",
+          "N8N_API_HEADER": "X-N8N-API-KEY"
+        }
+      }
+    }
+  }
